@@ -63,28 +63,24 @@ def naiveSoftmaxLossAndGradient(
     
 
     # p(o|c) = exp(ContextWord . CenterWord ) / Sum(exp(ContextWord . CenterWord))
+
     #Passing two vectors in the softmax function to get the probabilities of the their dot product
 
-    print(outsideVectors)
+    smax_probs = softmax(np.dot(outsideVectors,centerWordVec))
 
-    print(centerWordVec)
+
+    loss = -np.log(smax_probs[outsideWordIdx])
+
+    true_values = np.zeros_like((smax_probs))
+
+    #One-Hot encoding of the true value
+    true_values[outsideWordIdx] = 1
     
+    #gradient w.r.t centerword vector for the softmax loss (y^ - y). Uw
+    gradCenterVec = np.dot((smax_probs - true_values), outsideVectors)
 
-    # print(np.dot(outsideVectors,centerWordVec))
-    y_pred = softmax(np.dot(outsideVectors,centerWordVec))
-
-    # print(y_pred)
-
-    loss = - np.log(y_pred[outsideWordIdx])
-
-    # print(loss)
-
-    y = np.zeros_like(y_pred)
-
-    y[outsideWordIdx] = 1
-    
-    gradCenterVec = np.dot(y_pred - y, outsideVectors)
-    gradOutsideVecs = np.outer(y_pred - y, centerWordVec)
+    #gradient w.r.t contextword vector for the softmax loss (y^ - y). Vc
+    gradOutsideVecs = np.dot( (smax_probs - true_values).reshape(-1,1),centerWordVec.reshape(1,-1))
 
     ### END YOUR CODE
 
@@ -132,6 +128,35 @@ def negSamplingLossAndGradient(
     ### YOUR CODE HERE (~10 Lines)
 
     ### Please use your implementation of sigmoid in here.
+
+    # u_o = outsideVectors[outsideWordIdx]
+    # u_k = outsideVectors[negSampleWordIndices]
+    # v_c = centerWordVec
+
+    # loss = -np.log(sigmoid(np.dot(np.transpose(u_o), v_c))) - np.sum(np.log(sigmoid(-np.dot(np.transpose(u_k), v_c))))
+
+    # gradCenterVec = -(1-sigmoid(np.dot(np.transpose(u_o), v_c))) * u_o - np.dot(-(1-sigmoid(-np.dot(u_k, v_c))).T, u_k)
+
+    # gradCenterVec = np.zeros_like(centerWordVec)
+
+    gradOutsideVecs = np.zeros_like(outsideVectors)
+    loss = 0
+
+    # sig_U_oV_c = sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))
+
+    loss = -np.log(sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec)))
+
+    gradCenterVec = - np.dot((1 - sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))), outsideVectors[outsideWordIdx])
+
+    gradOutsideVecs[outsideWordIdx] = - np.dot((1 - sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))), centerWordVec)
+
+
+    for i in range(K):
+        u_k = indices[i+1]
+        # sig_U_kV_c = sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))
+        loss += -np.log(sigmoid(-np.dot(outsideVectors[u_k],centerWordVec)))
+        gradCenterVec += np.dot((1.0-sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))),outsideVectors[u_k]) 
+        gradOutsideVecs[u_k] += np.dot((1.0 - sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))),centerWordVec)
 
     ### END YOUR CODE
 
