@@ -129,35 +129,28 @@ def negSamplingLossAndGradient(
 
     ### Please use your implementation of sigmoid in here.
 
-    # u_o = outsideVectors[outsideWordIdx]
-    # u_k = outsideVectors[negSampleWordIndices]
-    # v_c = centerWordVec
-
-    # loss = -np.log(sigmoid(np.dot(np.transpose(u_o), v_c))) - np.sum(np.log(sigmoid(-np.dot(np.transpose(u_k), v_c))))
-
-    # gradCenterVec = -(1-sigmoid(np.dot(np.transpose(u_o), v_c))) * u_o - np.dot(-(1-sigmoid(-np.dot(u_k, v_c))).T, u_k)
-
-    # gradCenterVec = np.zeros_like(centerWordVec)
-
-    gradOutsideVecs = np.zeros_like(outsideVectors)
     loss = 0
 
-    # sig_U_oV_c = sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))
+    #calculate the loss w.r.t Context Word with Given Center Word
+    loss += -np.log(sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec)))
 
-    loss = -np.log(sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec)))
-
+    #Calculating Gradient Loss of CenterWord Vector
     gradCenterVec = - np.dot((1 - sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))), outsideVectors[outsideWordIdx])
 
+    gradOutsideVecs = np.zeros_like(outsideVectors) #Intializing the ContextWord vector gradient
+
+    #calcuating Gradient Loss of Context Word Vector
     gradOutsideVecs[outsideWordIdx] = - np.dot((1 - sigmoid(np.dot(outsideVectors[outsideWordIdx],centerWordVec))), centerWordVec)
 
-
+    #Iterating over K negative samples
     for i in range(K):
         u_k = indices[i+1]
-        # sig_U_kV_c = sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))
+        #Calculating the loss and summing it to the Loss for 'K' sampled Context vectors(Outside Vectors)
         loss += -np.log(sigmoid(-np.dot(outsideVectors[u_k],centerWordVec)))
+        #Calculate and summing the gradient for CenterWord with 'K' Sampled ContextVectors(Outside Vectors)
         gradCenterVec += np.dot((1.0-sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))),outsideVectors[u_k]) 
+        #Calculate and summing the gradient for 'K' Sampled ContextVectors(Outside Vectors) with given CenterWord
         gradOutsideVecs[u_k] += np.dot((1.0 - sigmoid(-np.dot(outsideVectors[u_k],centerWordVec))),centerWordVec)
-
     ### END YOUR CODE
 
     return loss, gradCenterVec, gradOutsideVecs
@@ -203,7 +196,19 @@ def skipgram(currentCenterWord, windowSize, outsideWords, word2Ind,
     gradOutsideVectors = np.zeros(outsideVectors.shape)
 
     ### YOUR CODE HERE (~8 Lines)
+    loss = 0.0
+    #Intializing centerword index in the lookup table
+    centerWordIdx = word2Ind[currentCenterWord]
+    #creating a centerword vector
+    centerWordVec = centerWordVectors[centerWordIdx]
 
+    for contextword in outsideWords:
+        #calucating the softmax loss, gradient w.r.t center and context word vectors using Naive softmax loss function above
+        gradloss,gradCenterVec,gradOutsideVecs = word2vecLossAndGradient(centerWordVec,word2Ind[contextword],outsideVectors,dataset)
+        #adding loss,gradient of CenterVector and ContextVectors in the ContextWords
+        loss += gradloss
+        gradCenterVecs[centerWordIdx] += gradCenterVec
+        gradOutsideVectors += gradOutsideVecs
     ### END YOUR CODE
     
     return loss, gradCenterVecs, gradOutsideVectors

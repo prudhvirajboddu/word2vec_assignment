@@ -86,7 +86,10 @@ def sgd(f, x0, step, iterations, postprocessing=None, useSaved=False,
 
         loss = None
         ### YOUR CODE HERE (~2 lines)
-
+        #getting loss and the gradient of the function
+        loss, dx = f(x)
+        #updating the weights in the matrix with a product of small stepsize and the function gradient for each iteration
+        x -= step * dx
         ### END YOUR CODE
 
         x = postprocessing(x)
